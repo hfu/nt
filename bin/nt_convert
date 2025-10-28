@@ -83,8 +83,8 @@ class NTConverter
   end
 
   def detect_format(input_file)
-    # Read first few lines to detect format
-    lines = File.readlines(input_file).first(10).select { |l| !l.strip.empty? && !l.strip.start_with?('#') }
+    # Read first 20 lines to detect format (skip comments)
+    lines = File.readlines(input_file).first(20).select { |l| !l.strip.empty? && !l.strip.start_with?('#') }
     return :jordan if lines.empty?
     
     first_line = lines.first.strip
