@@ -1,0 +1,24 @@
+# Sample tky2jgd.par format data
+# Format: MeshCode Lat Lon dB(sec) dL(sec) dH(m)
+# This is a simplified sample for demonstration purposes
+# 
+# Real tky2jgd.par data can be obtained from:
+# https://vldb.gsi.go.jp/sokuchi/surveycalc/tky2jgd/download/
+#
+# MeshCode: Third mesh code (1km mesh)
+# Lat: Latitude in degrees
+# Lon: Longitude in degrees  
+# dB: Latitude shift in arcseconds (Tokyo -> JGD)
+# dL: Longitude shift in arcseconds (Tokyo -> JGD)
+# dH: Height shift in meters (Tokyo -> JGD)
+
+# Sample data for Tokyo area
+5339357700 35.6583333 139.7000000 -11.5325 4.2451 -36.12
+5339357701 35.6583333 139.7083333 -11.5318 4.2447 -36.11
+5339357702 35.6583333 139.7166667 -11.5311 4.2443 -36.10
+5339357710 35.6666667 139.7000000 -11.5298 4.2435 -36.09
+5339357711 35.6666667 139.7083333 -11.5291 4.2431 -36.08
+5339357712 35.6666667 139.7166667 -11.5284 4.2427 -36.07
+5339357720 35.6750000 139.7000000 -11.5271 4.2419 -36.06
+5339357721 35.6750000 139.7083333 -11.5264 4.2415 -36.05
+5339357722 35.6750000 139.7166667 -11.5257 4.2411 -36.04
