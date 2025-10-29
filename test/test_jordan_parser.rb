@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
+require 'tmpdir'
 require_relative '../lib/jordan_parser'
 
 class TestJordanParser < Minitest::Test
@@ -45,7 +46,7 @@ class TestJordanParser < Minitest::Test
 
   def test_parse_file
     # Create a temporary test file
-    test_file = '/tmp/test_jordan.txt'
+    test_file = File.join(Dir.tmpdir, 'test_jordan.txt')
     File.open(test_file, 'w') do |f|
       f.puts "# Comment line"
       f.puts "139.0 35.0 0.001 0.002"

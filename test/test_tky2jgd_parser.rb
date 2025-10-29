@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
+require 'tmpdir'
 require_relative '../lib/tky2jgd_parser'
 
 class TestTky2jgdParser < Minitest::Test
@@ -29,7 +30,7 @@ class TestTky2jgdParser < Minitest::Test
 
   def test_parse_file
     # Create a temporary test file
-    test_file = '/tmp/test_tky2jgd.par'
+    test_file = File.join(Dir.tmpdir, 'test_tky2jgd.par')
     File.open(test_file, 'w') do |f|
       f.puts "# Comment line"
       f.puts "5339357700 35.6583333 139.7000000 -11.5325 4.2451 -36.12"

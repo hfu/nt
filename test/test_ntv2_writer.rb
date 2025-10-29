@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
+require 'tmpdir'
 require_relative '../lib/ntv2_writer'
 
 class TestNTv2Writer < Minitest::Test
@@ -19,7 +20,7 @@ class TestNTv2Writer < Minitest::Test
   end
 
   def test_write_creates_file
-    output_file = '/tmp/test_output.gsb'
+    output_file = File.join(Dir.tmpdir, 'test_output.gsb')
     
     # Remove file if it exists
     File.delete(output_file) if File.exist?(output_file)
@@ -34,7 +35,7 @@ class TestNTv2Writer < Minitest::Test
   end
 
   def test_write_binary_format
-    output_file = '/tmp/test_output.gsb'
+    output_file = File.join(Dir.tmpdir, 'test_output.gsb')
     
     @writer.write(output_file)
     
@@ -50,7 +51,7 @@ class TestNTv2Writer < Minitest::Test
 
   def test_empty_grid_points
     empty_writer = NTv2Writer.new([])
-    output_file = '/tmp/test_empty.gsb'
+    output_file = File.join(Dir.tmpdir, 'test_empty.gsb')
     
     # Should handle empty grid gracefully
     empty_writer.write(output_file)
