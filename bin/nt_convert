@@ -1,0 +1,194 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../lib/tky2jgd_parser'
+require_relative '../lib/jordan_parser'
+require_relative '../lib/ntv2_writer'
+require 'optparse'
+require 'json'
+
+# CLI tool for converting tky2jgd.par and Jordan parameters to NTv2 format
+class NTConverter
+  VERSION = '1.0.0'
+
+  def initialize
+    @options = {
+      verbose: false,
+      output: nil,
+      format: 'ntv2',
+      input_format: 'auto'
+    }
+  end
+
+  def run(args)
+    parser = create_option_parser
+    parser.parse!(args)
+
+    if args.empty?
+      puts parser
+      exit 1
+    end
+
+    input_file = args[0]
+    
+    unless File.exist?(input_file)
+      warn "Error: Input file '#{input_file}' not found"
+      exit 1
+    end
+
+    convert(input_file)
+  end
+
+  private
+
+  def create_option_parser
+    OptionParser.new do |opts|
+      opts.banner = "Usage: nt_convert [options] input_file"
+      opts.separator ""
+      opts.separator "Convert transformation parameters to NTv2 grid format"
+      opts.separator "Supported input formats: tky2jgd.par, Jordan transformation parameters"
+      opts.separator ""
+      opts.separator "Options:"
+
+      opts.on("-o", "--output FILE", "Output file (default: input_file.gsb)") do |v|
+        @options[:output] = v
+      end
+
+      opts.on("-f", "--format FORMAT", "Output format: ntv2, json (default: ntv2)") do |v|
+        @options[:format] = v.downcase
+      end
+
+      opts.on("-i", "--input-format FORMAT", "Input format: auto, tky2jgd, jordan (default: auto)") do |v|
+        @options[:input_format] = v.downcase
+      end
+
+      opts.on("-v", "--verbose", "Verbose output") do
+        @options[:verbose] = true
+      end
+
+      opts.on("-s", "--stats", "Show statistics only") do
+        @options[:stats_only] = true
+      end
+
+      opts.on("-h", "--help", "Show this help message") do
+        puts opts
+        exit
+      end
+
+      opts.on("--version", "Show version") do
+        puts "nt_convert version #{VERSION}"
+        exit
+      end
+    end
+  end
+
+  def detect_format(input_file)
+    # Read first 20 lines to detect format (skip comments)
+    lines = File.readlines(input_file).first(20).select { |l| !l.strip.empty? && !l.strip.start_with?('#') }
+    return :jordan if lines.empty?
+    
+    first_line = lines.first.strip
+    parts = first_line.split(/[\s,]+/)
+    
+    # tky2jgd format has 6 parts and starts with a 10-digit mesh code
+    if parts.length >= 6 && parts[0] =~ /^\d{10}$/
+      :tky2jgd
+    # Jordan format typically has 4, 5, or 6 parts
+    elsif parts.length >= 4 && parts.length <= 6
+      :jordan
+    else
+      :jordan  # Default to jordan
+    end
+  end
+
+  def convert(input_file)
+    # Detect input format
+    input_format = if @options[:input_format] == 'auto'
+                      detected = detect_format(input_file)
+                      puts "Detected format: #{detected}" if @options[:verbose]
+                      detected
+                    else
+                      @options[:input_format].to_sym
+                    end
+
+    puts "Parsing #{input_file} (#{input_format} format)..." if @options[:verbose]
+    
+    parser = case input_format
+             when :tky2jgd
+               Tky2jgdParser.new
+             when :jordan
+               JordanParser.new
+             else
+               warn "Error: Unknown input format '#{input_format}'"
+               exit 1
+             end
+
+    begin
+      grid_points = parser.parse_file(input_file)
+    rescue StandardError => e
+      warn "Error parsing file: #{e.message}"
+      exit 1
+    end
+
+    if grid_points.empty?
+      warn "Error: No valid grid points found in input file"
+      exit 1
+    end
+
+    puts "Parsed #{grid_points.length} grid points" if @options[:verbose]
+
+    stats = parser.statistics
+    if @options[:verbose] || @options[:stats_only]
+      puts "\nStatistics:"
+      puts "  Total points: #{stats[:total_points]}"
+      puts "  Latitude range: #{stats[:bounds][:min_lat]} to #{stats[:bounds][:max_lat]}"
+      puts "  Longitude range: #{stats[:bounds][:min_lon]} to #{stats[:bounds][:max_lon]}"
+      puts "  Latitude shift range: #{stats[:lat_shift_range][0]} to #{stats[:lat_shift_range][1]} degrees"
+      puts "  Longitude shift range: #{stats[:lon_shift_range][0]} to #{stats[:lon_shift_range][1]} degrees"
+    end
+
+    return if @options[:stats_only]
+
+    output_file = @options[:output] || input_file.sub(/\.[^.]*$/, '') + '.gsb'
+
+    case @options[:format]
+    when 'ntv2'
+      write_ntv2(grid_points, output_file)
+    when 'json'
+      write_json(grid_points, output_file)
+    else
+      warn "Error: Unknown format '#{@options[:format]}'"
+      exit 1
+    end
+
+    puts "Output written to #{output_file}"
+  end
+
+  def write_ntv2(grid_points, output_file)
+    puts "Writing NTv2 format..." if @options[:verbose]
+    
+    writer = NTv2Writer.new(grid_points)
+    begin
+      writer.write(output_file)
+    rescue StandardError => e
+      warn "Error writing NTv2 file: #{e.message}"
+      exit 1
+    end
+  end
+
+  def write_json(grid_points, output_file)
+    puts "Writing JSON format..." if @options[:verbose]
+    
+    output_file = output_file.sub(/\.gsb$/, '.json') unless output_file.end_with?('.json')
+    
+    File.open(output_file, 'w') do |f|
+      f.write(JSON.pretty_generate(grid_points))
+    end
+  end
+end
+
+# Run the CLI
+if __FILE__ == $PROGRAM_NAME
+  converter = NTConverter.new
+  converter.run(ARGV)
+end

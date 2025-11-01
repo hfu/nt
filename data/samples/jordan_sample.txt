@@ -1,0 +1,24 @@
+# Sample Jordan transformation parameters
+# Format: ID X Y dX dY dZ
+#
+# Jordan transformation is a 2D conformal coordinate transformation
+# commonly used for converting between local and standard coordinate systems
+#
+# This sample shows transformation parameters for a small region near Jordan
+# ID: Point identifier
+# X: Longitude in decimal degrees
+# Y: Latitude in decimal degrees
+# dX: Longitude shift in degrees
+# dY: Latitude shift in degrees
+# dZ: Height shift in meters
+
+# Sample data - Jordan area (ID, longitude, latitude, dx, dy, dz)
+PT1 35.8500 31.9500 0.00012 -0.00015 2.5
+PT2 35.9000 31.9500 0.00013 -0.00015 2.6
+PT3 35.9500 31.9500 0.00014 -0.00014 2.7
+PT4 35.8500 32.0000 0.00012 -0.00014 2.5
+PT5 35.9000 32.0000 0.00013 -0.00014 2.6
+PT6 35.9500 32.0000 0.00014 -0.00013 2.7
+PT7 35.8500 32.0500 0.00012 -0.00013 2.5
+PT8 35.9000 32.0500 0.00013 -0.00013 2.6
+PT9 35.9500 32.0500 0.00014 -0.00012 2.7

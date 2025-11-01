@@ -1,0 +1,140 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+require 'net/http'
+require 'uri'
+
+# CLI tool for downloading tky2jgd.par
+class NTFetch
+  VERSION = '1.0.0'
+  TKY2JGD_URL = 'https://vldb.gsi.go.jp/sokuchi/surveycalc/tky2jgd/download/tky2jgd.par'
+
+  def initialize
+    @options = {
+      output: 'tky2jgd.par',
+      verbose: false
+    }
+  end
+
+  def run(args)
+    parser = create_option_parser
+    parser.parse!(args)
+
+    download_file
+  end
+
+  private
+
+  def create_option_parser
+    OptionParser.new do |opts|
+      opts.banner = "Usage: nt_fetch [options]"
+      opts.separator ""
+      opts.separator "Download tky2jgd.par from GSI (Geospatial Information Authority of Japan)"
+      opts.separator ""
+      opts.separator "Options:"
+
+      opts.on("-o", "--output FILE", "Output file (default: tky2jgd.par)") do |v|
+        @options[:output] = v
+      end
+
+      opts.on("-v", "--verbose", "Verbose output") do
+        @options[:verbose] = true
+      end
+
+      opts.on("-h", "--help", "Show this help message") do
+        puts opts
+        exit
+      end
+
+      opts.on("--version", "Show version") do
+        puts "nt_fetch version #{VERSION}"
+        exit
+      end
+    end
+  end
+
+  def download_file
+    output_file = @options[:output]
+
+    if File.exist?(output_file)
+      print "File '#{output_file}' already exists. Overwrite? (y/N): "
+      response = $stdin.gets.chomp.downcase
+      unless response == 'y' || response == 'yes'
+        puts "Download cancelled."
+        return
+      end
+    end
+
+    puts "Downloading tky2jgd.par from GSI..." if @options[:verbose]
+    puts "URL: #{TKY2JGD_URL}" if @options[:verbose]
+    puts "This may take a few minutes (file size ~10MB)..." if @options[:verbose]
+
+    begin
+      uri = URI.parse(TKY2JGD_URL)
+      
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+        request = Net::HTTP::Get.new(uri)
+        
+        http.request(request) do |response|
+          if response.code.to_i != 200
+            warn "Error: HTTP #{response.code} - #{response.message}"
+            exit 1
+          end
+
+          total_size = response['content-length'].to_i
+          downloaded = 0
+
+          File.open(output_file, 'wb') do |file|
+            response.read_body do |chunk|
+              file.write(chunk)
+              downloaded += chunk.size
+              
+              if @options[:verbose] && total_size > 0
+                progress = (downloaded * 100.0 / total_size).round(1)
+                print "\rProgress: #{progress}% (#{downloaded}/#{total_size} bytes)"
+              end
+            end
+          end
+          
+          puts "" if @options[:verbose]
+        end
+      end
+
+      file_size = File.size(output_file)
+      puts "Download complete!"
+      puts "File: #{output_file}"
+      puts "Size: #{format_bytes(file_size)}"
+      puts ""
+      puts "To convert to NTv2 format, run:"
+      puts "  ./bin/nt_convert #{output_file}"
+
+    rescue StandardError => e
+      warn "Error downloading file: #{e.message}"
+      warn ""
+      warn "Manual download:"
+      warn "  You can manually download the file from:"
+      warn "  #{TKY2JGD_URL}"
+      warn ""
+      warn "  Or use curl/wget:"
+      warn "  curl -O #{TKY2JGD_URL}"
+      exit 1
+    end
+  end
+
+  def format_bytes(bytes)
+    if bytes < 1024
+      "#{bytes} bytes"
+    elsif bytes < 1024 * 1024
+      "#{(bytes / 1024.0).round(2)} KB"
+    else
+      "#{(bytes / 1024.0 / 1024.0).round(2)} MB"
+    end
+  end
+end
+
+# Run the CLI
+if __FILE__ == $PROGRAM_NAME
+  fetcher = NTFetch.new
+  fetcher.run(ARGV)
+end
